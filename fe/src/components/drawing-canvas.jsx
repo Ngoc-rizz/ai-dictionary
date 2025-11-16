@@ -40,46 +40,46 @@ export function DrawingCanvas({ onRecognize }) {
     }
   }, []);
 
-  const startDrawing = (e) => {
+  const getCoords = (e) => {
     const canvas = canvasRef.current;
-    if (!canvas || !context) return;
-
-    context.lineWidth = 8;
-
+    if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    let x, y;
-    if ("touches" in e) {
-      x = e.touches[0].clientX - rect.left;
-      y = e.touches[0].clientY - rect.top;
-    } else {
-      x = e.clientX - rect.left;
-      y = e.clientY - rect.top;
+    if (e.touches && e.touches.length > 0) {
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top,
+      };
     }
-
-    context.beginPath();
-    context.moveTo(x, y);
-    setIsDrawing(true);
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   };
 
-  const draw = (e) => {
-    if (!isDrawing || !context || !canvasRef.current) return;
+  const startDrawing = useCallback(
+    (e) => {
+      if (!context) return;
+      if (e.touches) e.preventDefault();
 
-    const rect = canvasRef.current.getBoundingClientRect();
-    let x, y;
-    if ("touches" in e) {
-      e.preventDefault();
-      x = e.touches[0].clientX - rect.left;
-      y = e.touches[0].clientY - rect.top;
-    } else {
-      x = e.clientX - rect.left;
-      y = e.clientY - rect.top;
-    }
+      const { x, y } = getCoords(e);
+      context.lineWidth = 4;
+      context.beginPath();
+      context.moveTo(x, y);
+      setIsDrawing(true);
+    },
+    [context]
+  );
 
-    context.lineTo(x, y);
-    context.stroke();
-  };
+  const draw = useCallback(
+    (e) => {
+      if (!isDrawing || !context) return;
+      if (e.touches) e.preventDefault();
 
-  const stopDrawing = () => {
+      const { x, y } = getCoords(e);
+      context.lineTo(x, y);
+      context.stroke();
+    },
+    [isDrawing, context]
+  );
+
+  const stopDrawing = useCallback(() => {
     if (context) {
       context.closePath();
     }
@@ -87,7 +87,34 @@ export function DrawingCanvas({ onRecognize }) {
       saveHistory();
     }
     setIsDrawing(false);
-  };
+  }, [context, isDrawing, saveHistory]);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    // Gắn sự kiện 'mouse'
+    canvas.addEventListener("mousedown", startDrawing);
+    canvas.addEventListener("mousemove", draw);
+    canvas.addEventListener("mouseup", stopDrawing);
+    canvas.addEventListener("mouseleave", stopDrawing);
+
+    // Gắn sự kiện 'touch' VỚI { passive: false }
+    canvas.addEventListener("touchstart", startDrawing, { passive: false });
+    canvas.addEventListener("touchmove", draw, { passive: false });
+    canvas.addEventListener("touchend", stopDrawing);
+
+    // Hàm dọn dẹp (cleanup)
+    return () => {
+      canvas.removeEventListener("mousedown", startDrawing);
+      canvas.removeEventListener("mousemove", draw);
+      canvas.removeEventListener("mouseup", stopDrawing);
+      canvas.removeEventListener("mouseleave", stopDrawing);
+
+      canvas.removeEventListener("touchstart", startDrawing);
+      canvas.removeEventListener("touchmove", draw);
+      canvas.removeEventListener("touchend", stopDrawing);
+    };
+  }, [startDrawing, draw, stopDrawing]);
 
   const clearCanvas = () => {
     if (!context || !canvasRef.current) return;
@@ -129,17 +156,7 @@ export function DrawingCanvas({ onRecognize }) {
   return (
     <div className="flex flex-col items-center gap-4 w-full">
       <div className="border-2 border-dashed border-border rounded-lg overflow-hidden bg-white w-fit">
-        <canvas
-          ref={canvasRef}
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={stopDrawing}
-          onMouseLeave={stopDrawing}
-          onTouchStart={startDrawing}
-          onTouchMove={draw}
-          onTouchEnd={stopDrawing}
-          className="cursor-crosshair block"
-        />
+        <canvas ref={canvasRef} className="cursor-crosshair block" />
       </div>
 
       <div className="flex gap-2 w-full sm:w-auto justify-center">

@@ -238,8 +238,10 @@ export function ResultCard({ data, onRelatedWordClick = () => {} }) {
         japanese.reading,
         partOfSpeech
       );
+      console.log(result);
       setConjugationData(result);
     } catch (err) {
+      console.log(err);
       setConjError(err.message || "Không thể tải cách chia từ.");
     } finally {
       setIsConjLoading(false);

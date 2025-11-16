@@ -4,7 +4,7 @@ export async function recognizeHandwriting(imageDataUrl) {
       image_data: imageDataUrl,
     };
     const res = await fetch(
-      "https://ai-dictionary-3syq.onrender.com//api/handwriting",
+      "https://ai-dictionary-3syq.onrender.com/api/handwriting",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

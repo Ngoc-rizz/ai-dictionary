@@ -12,7 +12,7 @@ export function ResultsDisplay({ results }) {
   }
 
   return (
-    <div className="space-y-4 md:w-full">
+    <div className="space-y-4 w-full md:w-min">
       {results.map((item, idx) => (
         <ResultCard key={idx} data={item} />
       ))}
