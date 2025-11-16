@@ -31,11 +31,14 @@ export async function generateExamplesForSense({
       sense,
     };
     // console.log(payload);
-    const res = await fetch("http://localhost:8000/api/generate-examples", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const res = await fetch(
+      "https://ai-dictionary-3syq.onrender.com/api/generate-examples",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
     if (!res.ok) {
       const text = await res.text();
       throw new Error(text || `Request failed with status ${res.status}`);

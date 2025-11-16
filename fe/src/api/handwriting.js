@@ -3,11 +3,14 @@ export async function recognizeHandwriting(imageDataUrl) {
     const payload = {
       image_data: imageDataUrl,
     };
-    const res = await fetch("http://localhost:8000/api/handwriting", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const res = await fetch(
+      "https://ai-dictionary-3syq.onrender.com//api/handwriting",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
     if (!res.ok) {
       const errorText = await res.text();
       throw new Error(errorText || `Lỗi nhận dạng (HTTP ${res.status})`);
