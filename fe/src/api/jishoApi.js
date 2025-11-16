@@ -5,7 +5,9 @@ export async function getWordData(word) {
   if (cache.has(word)) return cache.get(word);
   // console.log(word);
   const res = await fetch(
-    `http://localhost:8000/api/jisho?word=${encodeURIComponent(word)}`
+    `https://ai-dictionary-3syq.onrender.com/api/jisho?word=${encodeURIComponent(
+      word
+    )}`
   );
   if (!res.ok) {
     throw new Error(`API error: ${res.status}`);
