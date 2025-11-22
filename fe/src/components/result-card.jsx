@@ -1,10 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { generateExamplesForSense } from "../api/jishoApi";
-import { ChevronDown, ChevronUp, Loader2, Activity } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  Activity,
+  Volume2,
+} from "lucide-react";
 import FuriganaText from "./ui/furigana-text";
 import { getConjugations } from "../api/conjugateApi";
 
@@ -27,6 +33,7 @@ function SenseItem({ sense, index, wordData, onRelatedWordClick }) {
   const [example, setExample] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
   async function handleGenerateExample() {
     setIsLoading(true);
     setError(null);
@@ -53,15 +60,21 @@ function SenseItem({ sense, index, wordData, onRelatedWordClick }) {
       setIsLoading(false);
     }
   }
+
   return (
     <div className="border-t border-border pt-4 first:border-t-0 first:pt-0">
       <div className="flex items-start gap-2 mb-2">
         <span className="shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm font-bold">
           {index}
         </span>
-        <div className="flex gap-2 flex-wrap">
+
+        <div className="flex gap-2 flex-nowrap overflow-x-auto max-w-full no-scrollbar">
           {sense.parts_of_speech?.map((pos, posIdx) => (
-            <Badge key={posIdx} variant="secondary" className="text-xs">
+            <Badge
+              key={posIdx}
+              variant="secondary"
+              className="text-xs px-2 py-1 shrink-0 max-w-[140px] whitespace-nowrap truncate"
+            >
               {pos}
             </Badge>
           ))}
@@ -71,17 +84,17 @@ function SenseItem({ sense, index, wordData, onRelatedWordClick }) {
       <div className="pl-8">
         <ol className="text-left list-decimal list-inside space-y-1 mb-3 text-sm sm:text-base">
           {sense.english_definitions.map((def, defIdx) => (
-            <li key={defIdx}> {def}</li>
+            <li key={defIdx}>{def}</li>
           ))}
         </ol>
 
         {sense.tags && sense.tags.length > 0 && (
-          <div className="flex gap-2 flex-wrap mb-3">
+          <div className="flex gap-2 flex-nowrap overflow-x-auto max-w-full no-scrollbar mb-3">
             {sense.tags.map((tag, tagIdx) => (
               <Badge
                 key={tagIdx}
                 variant="outline"
-                className="text-xs text-orange-500 border-orange-300 dark:text-orange-300 dark:border-orange-300"
+                className="text-xs px-2 py-1 shrink-0 max-w-[160px] whitespace-nowrap truncate text-orange-500 border-orange-300 dark:text-orange-300 dark:border-orange-300"
               >
                 {tag}
               </Badge>
@@ -98,16 +111,17 @@ function SenseItem({ sense, index, wordData, onRelatedWordClick }) {
           </div>
         )}
 
+        {/* See also: dùng button nhỏ, truncate để không đẩy width */}
         {sense.see_also && sense.see_also.length > 0 && (
           <div className="text-xs sm:text-sm">
             <p className="font-medium text-muted-foreground mb-1">See also:</p>
-            <div className="flex gap-1 flex-wrap">
+            <div className="flex gap-1 flex-nowrap overflow-x-auto max-w-full no-scrollbar">
               {sense.see_also.map((related, relatedIdx) => (
                 <button
                   key={relatedIdx}
                   type="button"
                   onClick={() => onRelatedWordClick(related)}
-                  className="px-2 py-1 bg-muted rounded text-xs sm:text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
+                  className="px-2 py-1 bg-muted rounded text-xs sm:text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors shrink-0 max-w-[180px] whitespace-nowrap truncate"
                 >
                   {related}
                 </button>
@@ -115,8 +129,8 @@ function SenseItem({ sense, index, wordData, onRelatedWordClick }) {
             </div>
           </div>
         )}
+
         <div className="mt-4">
-          {/* Nút bấm */}
           {!example && !isLoading && (
             <button
               onClick={handleGenerateExample}
@@ -126,7 +140,6 @@ function SenseItem({ sense, index, wordData, onRelatedWordClick }) {
             </button>
           )}
 
-          {/* Trạng thái Loading */}
           {isLoading && (
             <div className="flex items-center gap-2 text-xs italic text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -134,14 +147,11 @@ function SenseItem({ sense, index, wordData, onRelatedWordClick }) {
             </div>
           )}
 
-          {/* Trạng thái Lỗi */}
           {error && <div className="text-sm text-red-500">Lỗi: {error}</div>}
 
           {example && (
             <div className="p-3 bg-muted rounded-md space-y-2 mt-2 text-left">
-              {/* Dòng này bây giờ đã an toàn */}
               <FuriganaText text={example.sentence} />
-
               <p className="italic text-muted-foreground pt-1">
                 {example.translation}
               </p>
@@ -152,46 +162,38 @@ function SenseItem({ sense, index, wordData, onRelatedWordClick }) {
     </div>
   );
 }
+
 function PitchAccentDisplay({ reading, pattern }) {
-  // Chỉ render nếu dữ liệu khớp (số ký tự = số mẫu L/H)
-  if (!reading || !pattern || reading.length !== pattern.length) {
-    return null;
-  }
+  if (!reading || !pattern) return null;
+  const moras = reading.split("");
+  const tones = pattern.split("");
 
-  const moras = reading.split(""); // ["た", "べ", "る"]
-  const tones = pattern.split(""); // ["L", "H", "H"]
-
-  // Mảng 'elements' sẽ lưu kết quả
   const elements = [];
 
-  // 1. Thêm Mora (âm tiết) đầu tiên
   elements.push(
     <span key={0} className="text-lg text-muted-foreground">
       {moras[0]}
     </span>
   );
 
-  // 2. Lặp qua các Mora còn lại để thêm KÝ TỰ CHUYỂN TIẾP
   for (let i = 1; i < moras.length; i++) {
-    const prevTone = tones[i - 1]; // Âm trước
-    const currTone = tones[i]; // Âm hiện tại
+    const prevTone = tones[i - 1];
+    const currTone = tones[i];
 
-    let transitionSymbol = "—"; // Mặc định là bằng (flat)
+    let transitionSymbol = "—";
 
     if (prevTone === "L" && currTone === "H") {
-      transitionSymbol = "/"; // Lên (Low -> High)
+      transitionSymbol = "/";
     } else if (prevTone === "H" && currTone === "L") {
-      transitionSymbol = "\\"; // Xuống (High -> Low)
+      transitionSymbol = "\\";
     }
 
-    // Thêm ký tự chuyển tiếp
     elements.push(
       <span key={`t-${i}`} className="mx-1 text-primary font-bold">
         {transitionSymbol}
       </span>
     );
 
-    // Thêm Mora tiếp theo
     elements.push(
       <span key={i} className="text-lg text-muted-foreground">
         {moras[i]}
@@ -206,7 +208,10 @@ function PitchAccentDisplay({ reading, pattern }) {
   );
 }
 
-export function ResultCard({ data, onRelatedWordClick = () => {} }) {
+export const ResultCard = React.memo(function ResultCard({
+  data,
+  onRelatedWordClick = () => {},
+}) {
   const japanese = data.japanese[0] || {};
   const isCommon = data.is_common;
   const jlptLevel =
@@ -214,7 +219,7 @@ export function ResultCard({ data, onRelatedWordClick = () => {} }) {
       ? data.jlpt[0].replace("jlpt-", "").toUpperCase()
       : null;
   const pitchPattern = data.pitch_pattern;
-
+  console.log(pitchPattern, japanese.word);
   const [conjOpen, setConjOpen] = useState(false);
   const [conjugationData, setConjugationData] = useState(null);
   const [isConjLoading, setIsConjLoading] = useState(false);
@@ -247,9 +252,25 @@ export function ResultCard({ data, onRelatedWordClick = () => {} }) {
       setIsConjLoading(false);
     }
   };
+  const handleSpeak = () => {
+    if (typeof window === "undefined") return;
+
+    const text = japanese.word || japanese.reading;
+    if (!text) return;
+
+    try {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "ja-JP";
+
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.error("Speech synthesis error:", e);
+    }
+  };
   return (
-    <Card className="p-6 bg-card shadow-sm hover:shadow-md transition rounded-lg relative">
-      <div className="rounded-b-lg flex flex-col justify-around absolute w-full bottom-0 h-fit py-1 left-0  bg-[#1a1a1a] shadow-[-2px_0_10px_rgba(255,255,255,0.1)]">
+    <Card className="w-full pb-12 px-6  bg-card shadow-sm hover:shadow-md transition rounded-lg relative">
+      <div className="rounded-b-lg flex flex-col justify-around absolute w-full bottom-0 h-fit py-1 left-0 bg-[#1a1a1a] shadow-[-2px_0_10px_rgba(255,255,255,0.1)]">
         {isVerb && (
           <button
             className="h-full flex items-center justify-center"
@@ -258,8 +279,8 @@ export function ResultCard({ data, onRelatedWordClick = () => {} }) {
               handleFetchConjugations();
             }}
           >
-            <div className="flex justify-center items-center gap-2">
-              <span className=" inline-block">Conjugations</span>
+            <div className="flex justify-center items-center gap-2 text-xs sm:text-sm">
+              <span className="inline-block">Conjugations</span>
               <ChevronUp
                 className={`transition-transform duration-200 ${
                   conjOpen ? "rotate-180" : "rotate-0"
@@ -270,9 +291,10 @@ export function ResultCard({ data, onRelatedWordClick = () => {} }) {
           </button>
         )}
       </div>
-      <div className="flex">
+
+      <div className="flex flex-col">
         {isVerb && (
-          <div className="shrink-0 bg-transparent">
+          <>
             {conjOpen && (
               <div
                 onClick={() => setConjOpen(false)}
@@ -280,14 +302,14 @@ export function ResultCard({ data, onRelatedWordClick = () => {} }) {
               />
             )}
             <div
-              className={`absolute overflow-auto left-0 right-0 bottom-0 z-30 transform h-full  transition-transform duration-300 ease-in-out  backdrop-blur-lg  ${
+              className={`absolute left-0 right-0 bottom-0 z-30 transform h-full transition-transform duration-300 ease-in-out backdrop-blur-lg ${
                 conjOpen ? "translate-y-0" : "translate-y-full"
               }`}
             >
-              <div className=" bg-gradient-to-top from-[#0b0b0b] to-transparent border-t border-border p-4 overflow-auto">
+              <div className="bg-gradient-to-top from-[#0b0b0b] to-transparent border-t border-border p-4 overflow-auto">
                 <button
                   onClick={() => setConjOpen(false)}
-                  className="w-full flex justify-center py-2 mb-2  bg-transparent! text-muted-foreground hover:text-white transition"
+                  className="w-full flex justify-center py-2 mb-2 text-muted-foreground hover:text-white transition"
                 >
                   <ChevronDown size={20} />
                 </button>
@@ -301,52 +323,51 @@ export function ResultCard({ data, onRelatedWordClick = () => {} }) {
                     <span>Đang tải...</span>
                   </div>
                 )}
+
                 {!isConjLoading && conjugationData && (
-                  <ul className="space-y-2 text-sm">
-                    {conjugationData && (
-                      <div className="overflow-auto rounded-md">
-                        <table className="w-full text-sm border-collapse text-left">
-                          <thead>
-                            <tr className="border-b">
-                              <th className="text-left p-2 font-medium text-muted-foreground">
-                                Thể (Form)
-                              </th>
-                              <th className="text-left p-2 font-medium text-muted-foreground">
-                                Cách chia thể
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {Object.entries(conjugationData).map(
-                              ([key, value]) => (
-                                <tr
-                                  key={key}
-                                  className="border-b border-border/50"
-                                >
-                                  <td className="p-2">
-                                    {conjugationMap[key] || key}
-                                  </td>
-                                  <td className="p-2 font-medium text-lg text-left">
-                                    {value}
-                                  </td>
-                                </tr>
-                              )
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </ul>
+                  <div className="overflow-auto rounded-md">
+                    <table className="w-full text-sm border-collapse text-left">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-2 font-medium text-muted-foreground">
+                            Thể (Form)
+                          </th>
+                          <th className="text-left p-2 font-medium text-muted-foreground">
+                            Cách chia thể
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(conjugationData).map(([key, value]) => (
+                          <tr
+                            key={key}
+                            className="border-b border-border/50 align-top"
+                          >
+                            <td className="p-2 max-w-[160px] text-sm">
+                              {conjugationMap[key] || key}
+                            </td>
+                            <td className="p-2 font-medium text-lg text-left whitespace-nowrap">
+                              {value}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {conjError && (
+                  <div className="mt-2 text-sm text-red-500">{conjError}</div>
                 )}
               </div>
             </div>
-          </div>
+          </>
         )}
 
-        <div className="flex-1 p-6">
+        <div className="flex-1 pt-2">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3 sm:gap-0">
-            <div className="w-full lg:text-left text-center">
-              <h3 className="text-4xl font-bold text-foreground">
+            <div className="w-full lg:text-left text-center min-w-0">
+              <h3 className="text-3xl sm:text-4xl font-bold text-foreground break-words">
                 <ruby>
                   {japanese.word}
                   <rt className="text-base font-medium text-muted-foreground select-none">
@@ -355,29 +376,39 @@ export function ResultCard({ data, onRelatedWordClick = () => {} }) {
                 </ruby>
               </h3>
               {pitchPattern && (
-                <div className="mt-2 flex items-center gap-1">
+                <div className="mt-2 flex items-center justify-center sm:justify-start gap-1 text-xs sm:text-sm">
                   <Activity className="h-3 w-3" />
                   <span>:</span>
                   <PitchAccentDisplay
                     reading={japanese.reading}
                     pattern={pitchPattern}
                   />
+                  <button
+                    type="button"
+                    onClick={handleSpeak}
+                    className="ml-2 inline-flex items-center justify-center rounded-full p-1 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    aria-label="Phát âm tiếng Nhật"
+                  >
+                    <Volume2 className="h-4 w-4" />
+                  </button>
                 </div>
               )}
             </div>
-            <div className="flex gap-2 flex-wrap items-center">
+
+            <div className="flex gap-2 flex-wrap items-center justify-start sm:justify-end w-full sm:w-auto">
               {isCommon && (
-                <Badge className="bg-primary text-primary-foreground text-sm">
+                <Badge className="bg-primary text-primary-foreground text-xs sm:text-sm px-2 py-1">
                   Common
                 </Badge>
               )}
               {jlptLevel && (
-                <Badge className="bg-accent text-accent-foreground text-sm">
+                <Badge className="bg-accent text-accent-foreground text-xs sm:text-sm px-2 py-1">
                   {jlptLevel}
                 </Badge>
               )}
             </div>
           </div>
+
           <div className="space-y-4">
             {data.senses.map((sense, idx) => (
               <SenseItem
@@ -393,4 +424,4 @@ export function ResultCard({ data, onRelatedWordClick = () => {} }) {
       </div>
     </Card>
   );
-}
+});

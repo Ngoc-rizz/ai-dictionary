@@ -14,8 +14,6 @@ export async function getWordData(word) {
   }
   const data = await res.json();
   cache.set(word, data);
-  // console.log(data);
-
   return data;
 }
 

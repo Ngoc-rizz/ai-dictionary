@@ -7,7 +7,7 @@ export async function getConjugations(word, reading, partOfSpeech) {
     };
 
     const res = await fetch(
-      "https://ai-dictionary-3syq.onrender.com//api/conjugate",
+      "https://ai-dictionary-3syq.onrender.com/api/conjugate",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

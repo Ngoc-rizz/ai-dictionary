@@ -1,6 +1,7 @@
+import React from "react";
 import { ResultCard } from "./result-card";
 
-export function ResultsDisplay({ results }) {
+export const ResultsDisplay = React.memo(function ResultsDisplay({ results }) {
   if (results.length === 0) {
     return (
       <div className="text-center py-12">
@@ -18,4 +19,4 @@ export function ResultsDisplay({ results }) {
       ))}
     </div>
   );
-}
+});

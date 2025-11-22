@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DrawingCanvas } from "./drawing-canvas";
 import { ResultsDisplay } from "./results-display";
@@ -8,6 +8,7 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getWordData } from "../api/jishoApi";
 import { recognizeHandwriting } from "../api/handwriting";
+import { resizeImageToBase64 } from "../lib/resizeImageToBase64";
 
 export function SearchTabs() {
   const [searchResults, setSearchResults] = useState([]);
@@ -20,53 +21,42 @@ export function SearchTabs() {
   const [hasDrawSearched, setHasDrawSearched] = useState(false);
   const [isDrawLoading, setIsDrawLoading] = useState(false);
 
+  const searchInputRef = useRef(null);
+
+  console.log("re render");
   const filterJishoData = (data) => {
     if (!data) return [];
-
-    // 1. Dùng .map() để "dọn dẹp" (clean) từng mục
     const cleanedData = data.map((item) => {
-      // 1a. Lọc bỏ các mục "rác" (không có 'is_common')
-      // (Đây là các mục slug ID mà Jisho API trả về)
       if (!item.hasOwnProperty("is_common")) {
         return null;
       }
-
-      // 1b. Tạo một mảng 'senses' mới, chỉ giữ lại những sense KHÔNG phải Wikipedia
       const cleanedSenses = item.senses.filter(
         (sense) => !sense.parts_of_speech.includes("Wikipedia definition")
       );
 
-      // 1c. Trả về mục đã được "dọn dẹp"
-      // Ghi đè 'senses' cũ bằng 'cleanedSenses' mới
       return { ...item, senses: cleanedSenses };
     });
-
-    // 2. Dùng .filter() để lọc bỏ:
-    //   Các mục 'null' (mục rác đã đánh dấu ở 1a)
-    //    Các mục từ vựng nhưng giờ không còn sense nào (vì sense duy nhất là Wikipedia)
     return cleanedData.filter(
       (item) => item !== null && item.senses.length > 0
     );
   };
 
-  const handleSearch = async (query) => {
-    const trimmedQuery = query.trim();
-    if (!trimmedQuery) {
-      setSearchQuery("");
+  const handleSearch = async () => {
+    const keyword = searchInputRef.current?.value.trim() || "";
+
+    if (!keyword) {
       setSearchResults([]);
       setHasTextSearched(false);
       return;
     }
-    setSearchQuery(trimmedQuery);
-    setHasTextSearched(false);
-    setSearchResults([]);
+
     setIsSearchLoading(true);
+    setHasTextSearched(false);
 
     try {
-      const result = await getWordData(trimmedQuery);
+      const result = await getWordData(keyword);
       setSearchResults(filterJishoData(result.data));
-    } catch (error) {
-      // console.error("Lỗi khi lấy dữ liệu:", error);
+    } catch {
       setSearchResults([]);
     } finally {
       setIsSearchLoading(false);
@@ -81,10 +71,13 @@ export function SearchTabs() {
     setDrawQuery("");
 
     try {
-      const recogResult = await recognizeHandwriting(imageDataUrl);
+      const optimizedBase64 = await resizeImageToBase64(imageDataUrl, 768);
+
+      const recogResult = await recognizeHandwriting(optimizedBase64);
       if (!recogResult) {
         throw new Error("Không thể nhận dạng ký tự.");
       }
+      console.log(recogResult);
 
       setDrawQuery(recogResult);
       const searchResult = await getWordData(recogResult);
@@ -116,9 +109,8 @@ export function SearchTabs() {
       <TabsContent value="search" className="overflow-x-hidden">
         <div className="flex gap-2 overflow-x-hidden">
           <input
+            ref={searchInputRef}
             type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Enter a word"
             className="flex-1 border rounded px-2 py-1 text-sm sm:text-base"
           />
